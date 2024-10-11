@@ -10,7 +10,7 @@
         <title>ebook landing page template</title>
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
-        
+
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
         <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@ https://templatemo.com/tm-588-ebook-landing
 
 -->
     </head>
-    
+
     <body>
 
         <main>
@@ -45,17 +45,17 @@ https://templatemo.com/tm-588-ebook-landing
                             <span>Download</span><!-- duplicated another one below for mobile -->
                         </a>
                     </div>
-    
+
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                         <span class="navbar-toggler-icon"></span>
                     </button>
-    
+
                     <div class="collapse navbar-collapse" id="navbarNav">
                         <ul class="navbar-nav ms-lg-auto me-lg-4">
                             <li class="nav-item">
                                 <a class="nav-link click-scroll" href="#section_1">Home</a>
                             </li>
-    
+
                             <li class="nav-item">
                                 <a class="nav-link click-scroll" href="#section_2">The Book</a>
                             </li>
@@ -82,7 +82,7 @@ https://templatemo.com/tm-588-ebook-landing
                     </div>
                 </div>
             </nav>
-            
+
 
             <section class="hero-section d-flex justify-content-center align-items-center" id="section_1">
                 <div class="container">
@@ -296,14 +296,14 @@ https://templatemo.com/tm-588-ebook-landing
                     <div class="row">
 
                         <div class="col-lg-5 col-12 mx-auto">
-                            <form class="custom-form ebook-download-form bg-white shadow" action="#" method="post" role="form">
+                            <form class="custom-form ebook-upload-form bg-white shadow" action="/upload" method="post" enctype="multipart/form-data">
                                 <div class="text-center mb-5">
-                                    <h2 class="mb-1">Get your free ebook</h2>
+                                    <h2 class="mb-1">Upload your ebook</h2>
                                 </div>
 
-                                <div class="ebook-download-form-body">
+                                <div class="ebook-upload-form-body">
                                     <div class="input-group mb-4">
-                                        <input type="text" name="ebook-form-name" id="ebook-form-name" class="form-control" aria-label="ebook-form-name" aria-describedby="basic-addon1" placeholder="Your Name" required>
+                                        <input type="text" name="uploader-name" id="uploader-name" class="form-control" aria-label="uploader-name" aria-describedby="basic-addon1" placeholder="Your Name" required>
 
                                         <span class="input-group-text" id="basic-addon1">
                                             <i class="custom-form-icon bi-person"></i>
@@ -311,15 +311,24 @@ https://templatemo.com/tm-588-ebook-landing
                                     </div>
 
                                     <div class="input-group mb-4">
-                                        <input type="email" name="ebook-email" id="ebook-email" pattern="[^ @]*@[^ @]*" class="form-control" placeholder="your@company.com" aria-label="ebook-form-email" aria-describedby="basic-addon2" required="">
+                                        <input type="email" name="uploader-email" id="uploader-email" pattern="[^ @]*@[^ @]*" class="form-control" placeholder="your@company.com" aria-label="uploader-email" aria-describedby="basic-addon2" required>
 
                                         <span class="input-group-text" id="basic-addon2">
                                             <i class="custom-form-icon bi-envelope"></i>
                                         </span>
                                     </div>
 
+                                    <!-- Nowe pole do przesyłania plików -->
+                                    <div class="input-group mb-4">
+                                        <input type="file" name="ebook-file" id="ebook-file" class="form-control" required>
+
+                                        <span class="input-group-text" id="basic-addon3">
+                                            <i class="custom-form-icon bi-file-earmark-arrow-up"></i>
+                                        </span>
+                                    </div>
+
                                     <div class="col-lg-8 col-md-10 col-8 mx-auto">
-                                        <button type="submit" class="form-control">Download ebook</button>
+                                        <button type="submit" class="form-control">Upload your file</button>
                                     </div>
                                 </div>
                             </form>
@@ -367,7 +376,7 @@ https://templatemo.com/tm-588-ebook-landing
                                 </li>
                             </ul>
 
-                            <p class="copyright-text">Copyright © 2048 ebook company
+                            <p class="copyright-text">Copyright © 2024 ebook company
                             <br><br><a rel="nofollow" href="https://templatemo.com" target="_blank">designed by templatemo</a></p>
                         </div>
 

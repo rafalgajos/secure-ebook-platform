@@ -837,9 +837,9 @@ strong {
 
 
 /*---------------------------------------
-  EBOOK DOWNLOAD FORM               
+  EBOOK UPLOAD FORM
 -----------------------------------------*/
-.ebook-download-form {
+.ebook-upload-form {
   border-radius: var(--border-radius-medium);
   position: relative;
   z-index: 2;
@@ -1004,7 +1004,7 @@ strong {
     padding-left: 20px;
   }
 
-  .ebook-download-form {
+  .ebook-upload-form {
     padding: 30px;
   }
 }
