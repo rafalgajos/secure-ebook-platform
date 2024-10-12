@@ -5,7 +5,6 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <meta name="description" content="">
-        <meta name="author" content="">
 
         <title>ebook landing page template</title>
 
@@ -61,10 +60,6 @@ https://templatemo.com/tm-588-ebook-landing
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link click-scroll" href="#section_3">Author</a>
-                            </li>
-
-                            <li class="nav-item">
                                 <a class="nav-link click-scroll" href="#section_4">Reviews</a>
                             </li>
 
@@ -95,8 +90,6 @@ https://templatemo.com/tm-588-ebook-landing
                             <h1 class="text-white mb-4">ebook landing page for professionals</h1>
 
                             <a href="#section_2" class="btn custom-btn smoothscroll me-3">Discover More</a>
-
-                            <a href="#section_3" class="link link--kale smoothscroll">Meet the Author</a>
                         </div>
 
                         <div class="hero-image-wrap col-lg-6 col-12 mt-3 mt-lg-0">
@@ -168,134 +161,73 @@ https://templatemo.com/tm-588-ebook-landing
                 </div>
             </section>
 
-
-            <section class="author-section section-padding" id="section_3">
-                <div class="container">
-                    <div class="row">
-
-                        <div class="col-lg-6 col-12">
-                            <img src="../static/images/portrait-mature-smiling-authoress-sitting-desk.jpg" class="author-image img-fluid" alt="">
-                        </div>
-
-                        <div class="col-lg-6 col-12 mt-5 mt-lg-0">
-                            <h6>Meet Author</h6>
-
-                            <h2 class="mb-4">Prof. Sophia</h2>
-
-                            <p>This is an ebook landing page template with Bootstrap 5 CSS framework. It is easy to customize with the use of Bootstrap CSS classes.</p>
-
-                            <p>Lorem ipsum dolor sit amet, consive adipisicing elit, sed do eiusmod. tempor incididunt ut labore.</p>
-                        </div>
-
-                    </div>
-                </div>
-            </section>
-
-
             <section class="reviews-section section-padding" id="section_4">
                 <div class="container">
                     <div class="row">
-
                         <div class="col-lg-12 col-12 text-center mb-5">
                             <h6>Reviews</h6>
-
-                            <h2>What people saying...</h2>
+                            <h2>What people are saying...</h2>
                         </div>
 
-                        <div class="col-lg-4 col-12">
+                        <!-- Display the last review -->
+                        {% if last_review %}
+                        <div class="col-lg-12 col-12">
                             <div class="custom-block d-flex flex-wrap">
-                                <div class="custom-block-image-wrap d-flex flex-column">
-                                    <img src="../static/images/avatar/portrait-beautiful-young-woman-standing-grey-wall.jpg" class="img-fluid avatar-image" alt="">
-
-                                    <div class="text-center mt-3">
-                                        <span class="text-white">Sandy</span>
-
-                                        <strong class="d-block text-white">Artist</strong>
-                                    </div>
-                                </div>
-
                                 <div class="custom-block-info">
-                                    <div class="reviews-group mb-3">
-                                        <strong>4.5</strong>
-
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star"></i>
-                                    </div>
-
-                                    <p class="mb-0">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+                                    <h4 class="recent-review-title">Recent review:</h4>
+                                    <p><strong>Author:</strong> {{ last_review.name|safe }}</p>
+                                    <p><strong>Email:</strong> {{ last_review.email|safe }}</p>
+                                    <p><strong>Content:</strong> {{ last_review.content|safe }}</p>
+                                    <p><strong>User ID:</strong> {{ last_review.user_id|safe }}</p>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="col-lg-4 col-12 my-5 my-lg-0">
-                            <div class="custom-block d-flex flex-wrap">
-                                <div class="custom-block-image-wrap d-flex flex-column">
-                                    <img src="../static/images/avatar/portrait-young-redhead-bearded-male.jpg" class="img-fluid avatar-image avatar-image-left" alt="">
-
-                                    <div class="text-center mt-3">
-                                        <span class="text-white">John</span>
-
-                                        <strong class="d-block text-white">Producer</strong>
-                                    </div>
-                                </div>
-
-                                <div class="custom-block-info">
-                                    <div class="reviews-group mb-3">
-                                        <strong>3.5</strong>
-
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star"></i>
-                                        <i class="bi-star"></i>
-                                    </div>
-
-                                    <p class="mb-0">If you need some specific CSS templates, you can Google with keywords such as templatemo one-page, templatemo portfolio, etc.</p>
-                                </div>
-                            </div>
+                        {% else %}
+                        <div class="col-lg-12 col-12 text-center">
+                            <p>No reviews yet.</p>
                         </div>
+                        {% endif %}
+                    </div>
 
-                        <div class="col-lg-4 col-12">
-                            <div class="custom-block d-flex flex-wrap">
-                                <div class="custom-block-image-wrap d-flex flex-column">
-                                    <img src="../static/images/avatar/pretty-blonde-woman.jpg" class="img-fluid avatar-image" alt="">
+                    <!-- Add review form -->
+                    <div class="row mt-5">
+                        <div class="col-lg-8 col-12 mx-auto">
+                            <h2 class="text-center mb-4">Add Your Review</h2>
+                            <form id="submitReview" action="{{ url_for('submit_review', session_id=session_id) }}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
 
-                                    <div class="text-center mt-3">
-                                        <span class="text-white">Candy</span>
-
-                                        <strong class="d-block text-white">VP, Design</strong>
-                                    </div>
+                                <div class="form-group mb-3">
+                                    <input type="text" class="form-control" placeholder="Your Name" name="name" required>
                                 </div>
 
-                                <div class="custom-block-info">
-                                    <div class="reviews-group mb-3">
-                                        <strong>5</strong>
-
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                        <i class="bi-star-fill"></i>
-                                    </div>
-
-                                    <p class="mb-0">Please tell your friends about our website that we provide 100% free CSS templates for everyone. Thank you for using our templates.</p>
+                                <div class="form-group mb-3">
+                                    <input type="email" class="form-control" placeholder="Your Email" name="email" required>
                                 </div>
-                            </div>
+
+                                <div class="form-group mb-3">
+                                    <textarea class="form-control" rows="4" placeholder="Your Review" name="message" required></textarea>
+                                </div>
+
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                                </div>
+                            </form>
                         </div>
-
                     </div>
                 </div>
             </section>
-
 
             <section class="contact-section section-padding" id="section_5">
                 <div class="container">
                     <div class="row">
 
                         <div class="col-lg-5 col-12 mx-auto">
+                            <!-- Success message (file upload result) -->
+                            {% if upload_message %}
+                            <div class="alert alert-success text-center mt-4">
+                                {{ upload_message }}
+                            </div>
+                            {% endif %}
                             <form class="custom-form ebook-upload-form bg-white shadow" action="/upload" method="post" enctype="multipart/form-data">
                                 <div class="text-center mb-5">
                                     <h2 class="mb-1">Upload your ebook</h2>
