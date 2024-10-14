@@ -2,7 +2,10 @@
 
 ---
 
-![Secure Ebook Platform](images/hacker.jpg)
+<div style="text-align: center;">
+    <img src="images/hacker.jpg" alt="Secure Ebook Platform" width="50%">
+</div>
+
 ---
 
 ## Project Description
