@@ -38,10 +38,12 @@
                 const sqlinProtectionEnabled = {{ sqlin_protection_enabled|tojson }};
                 const xssProtectionEnabled = {{ xss_protection_enabled|tojson }};
                 const csrfProtectionEnabled = {{ csrf_protection_enabled|tojson }};
+                const sessionHijackProtectionEnabled = {{ session_hijack_protection_enabled|tojson }};
 
                 $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
                 $('#toggle-xss-protection').text(xssProtectionEnabled ? 'Disable XSS Protection' : 'Enable XSS Protection');
                 $('#toggle-csrf-protection').text(csrfProtectionEnabled ? 'Disable CSRF Protection' : 'Enable CSRF Protection');
+                $('#toggle-session-hijack-protection').text(sessionHijackProtectionEnabled ? 'Disable Session Hijack Protection' : 'Enable Session Hijack Protection');
             });
         </script>
 
@@ -71,6 +73,13 @@
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                         <button id="toggle-csrf-protection" type="submit" class="btn btn-success">
                             {{ 'Disable CSRF Protection' if csrf_protection_enabled else 'Enable CSRF Protection' }}
+                        </button>
+                    </form>
+                    <!-- Session Hijack Protection toggle button -->
+                    <form action="/toggle-session-hijack-protection" method="post" class="d-flex">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button id="toggle-session-hijack-protection" type="submit" class="btn btn-danger">
+                            {{ 'Disable Session Hijack Protection' if session_hijack_protection_enabled else 'Enable Session Hijack Protection' }}
                         </button>
                     </form>
                 </div>
