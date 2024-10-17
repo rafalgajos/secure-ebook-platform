@@ -18,63 +18,29 @@
         <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='css/bootstrap-icons.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='css/templatemo-ebook-landing.css') }}" rel="stylesheet">
-<!--
 
-TemplateMo 588 ebook landing
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-https://templatemo.com/tm-588-ebook-landing
+        <script>
+            $(document).ready(function() {
+                const sqlinProtectionEnabled = {{ sqlin_protection_enabled|tojson }};
+                $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
+            });
+        </script>
 
--->
     </head>
 
     <body>
 
         <main>
 
-            <nav class="navbar navbar-expand-lg">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
                 <div class="container">
-                    <a class="navbar-brand" href="index.html">
-                        <i class="navbar-brand-icon bi-book me-2"></i>
-                        <span>ebook</span>
-                    </a>
-
-                    <div class="d-lg-none ms-auto me-3">
-                        <a href="#" class="btn custom-btn custom-border-btn btn-naira btn-inverted">
-                            <i class="btn-icon bi-cloud-download"></i>
-                            <span>Download</span><!-- duplicated another one below for mobile -->
-                        </a>
-                    </div>
-
-                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-
-                    <div class="collapse navbar-collapse" id="navbarNav">
-                        <ul class="navbar-nav ms-lg-auto me-lg-4">
-                            <li class="nav-item">
-                                <a class="nav-link click-scroll" href="#section_1">Home</a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link click-scroll" href="#section_2">The Book</a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link click-scroll" href="#section_4">Reviews</a>
-                            </li>
-
-                            <li class="nav-item">
-                                <a class="nav-link click-scroll" href="#section_5">Contact</a>
-                            </li>
-                        </ul>
-
-                        <div class="d-none d-lg-block">
-                            <a href="#" class="btn custom-btn custom-border-btn btn-naira btn-inverted">
-                                <i class="btn-icon bi-cloud-download"></i>
-                                <span>Download</span><!-- duplicated above one for mobile -->
-                            </a>
-                        </div>
-                    </div>
+                    <!-- SQL Injection Protection toggle button -->
+                    <form action="/toggle-sqlin-protection" method="post" class="d-flex">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button id="toggle-sqlin-protection" type="submit" class="btn btn-warning"></button>
+                    </form>
                 </div>
             </nav>
 
@@ -93,7 +59,7 @@ https://templatemo.com/tm-588-ebook-landing
                         </div>
 
                         <div class="hero-image-wrap col-lg-6 col-12 mt-3 mt-lg-0">
-                            <img src="../static/images/education-online-books.png" class="hero-image img-fluid" alt="education online books">
+                            <img src="{{ url_for('static', filename='images/education-online-books.png') }}" class="hero-image img-fluid" alt="education online books">
                         </div>
 
                     </div>
@@ -107,13 +73,13 @@ https://templatemo.com/tm-588-ebook-landing
 
                         <div class="col-lg-8 col-12">
                             <div class="avatar-group d-flex flex-wrap align-items-center">
-                                <img src="../static/images/avatar/portrait-beautiful-young-woman-standing-grey-wall.jpg" class="img-fluid avatar-image" alt="">
+                                <img src="{{ url_for('static', filename='images/avatar/portrait-beautiful-young-woman-standing-grey-wall.jpg') }}" class="img-fluid avatar-image" alt="">
 
-                                <img src="../static/images/avatar/portrait-young-redhead-bearded-male.jpg" class="img-fluid avatar-image avatar-image-left" alt="">
+                                <img src="{{ url_for('static', filename='images/avatar/portrait-young-redhead-bearded-male.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
 
-                                <img src="../static/images/avatar/pretty-blonde-woman.jpg" class="img-fluid avatar-image avatar-image-left" alt="">
+                                <img src="{{ url_for('static', filename='images/avatar/pretty-blonde-woman.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
 
-                                <img src="../static/images/avatar/studio-portrait-emotional-happy-funny-smiling-boyfriend.jpg" class="img-fluid avatar-image avatar-image-left" alt="">
+                                <img src="{{ url_for('static', filename='images/avatar/studio-portrait-emotional-happy-funny-smiling-boyfriend.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
 
                                 <div class="reviews-group mt-3 mt-lg-0">
                                     <strong>4.5</strong>
@@ -141,7 +107,7 @@ https://templatemo.com/tm-588-ebook-landing
                     <div class="row">
 
                         <div class="col-lg-6 col-12">
-                            <img src="../static/images/tablet-screen-contents.jpg" class="img-fluid" alt="">
+                            <img src="{{ url_for('static', filename='images/tablet-screen-contents.jpg') }}" class="img-fluid" alt="">
                         </div>
 
                         <div class="col-lg-6 col-12">
@@ -169,6 +135,12 @@ https://templatemo.com/tm-588-ebook-landing
                             <h2>What people are saying...</h2>
                         </div>
 
+                        {% if thank_you_message %}
+                            <div class="alert alert-success text-center mt-4">
+                                {{ thank_you_message|safe }}
+                            </div>
+                        {% endif %}
+
                         <!-- Display the last review -->
                         {% if last_review %}
                         <div class="col-lg-12 col-12">
@@ -186,6 +158,7 @@ https://templatemo.com/tm-588-ebook-landing
                         <div class="col-lg-12 col-12 text-center">
                             <p>No reviews yet.</p>
                         </div>
+
                         {% endif %}
                     </div>
 
@@ -194,7 +167,8 @@ https://templatemo.com/tm-588-ebook-landing
                         <div class="col-lg-8 col-12 mx-auto">
                             <h2 class="text-center mb-4">Add Your Review</h2>
                             <form id="submitReview" action="{{ url_for('submit_review', session_id=session_id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ session.csrf_token }}">
+
+                                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
 
                                 <div class="form-group mb-3">
                                     <input type="text" class="form-control" placeholder="Your Name" name="name" required>
@@ -229,6 +203,8 @@ https://templatemo.com/tm-588-ebook-landing
                             </div>
                             {% endif %}
                             <form class="custom-form ebook-upload-form bg-white shadow" action="/upload" method="post" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+
                                 <div class="text-center mb-5">
                                     <h2 class="mb-1">Upload your ebook</h2>
                                 </div>
