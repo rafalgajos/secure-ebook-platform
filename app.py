@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, redirect, session, url_for, a
 
 app = Flask(__name__)
 app.config['SQLIN_PROTECTION_ENABLED'] = True
-app.config['XSS_PROTECTION_ENABLED'] = False
+app.config['XSS_PROTECTION_ENABLED'] = True
 app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = True
 app.config['CSRF_PROTECTION_ENABLED'] = True
 app.secret_key = 'super_secret_key'

@@ -24,7 +24,10 @@
         <script>
             $(document).ready(function() {
                 const sqlinProtectionEnabled = {{ sqlin_protection_enabled|tojson }};
+                const xssProtectionEnabled = {{ xss_protection_enabled|tojson }};
+
                 $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
+                $('#toggle-xss-protection').text(xssProtectionEnabled ? 'Disable XSS Protection' : 'Enable XSS Protection');
             });
         </script>
 
@@ -40,6 +43,14 @@
                     <form action="/toggle-sqlin-protection" method="post" class="d-flex">
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                         <button id="toggle-sqlin-protection" type="submit" class="btn btn-warning"></button>
+                    </form>
+
+                    <!-- XSS Protection toggle button -->
+                    <form action="/toggle-xss-protection" method="post" class="d-flex">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button id="toggle-xss-protection" type="submit" class="btn btn-info">
+                            {{ 'Disable XSS Protection' if xss_protection_enabled else 'Enable XSS Protection' }}
+                        </button>
                     </form>
                 </div>
             </nav>
