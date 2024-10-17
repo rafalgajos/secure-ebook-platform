@@ -22,12 +22,26 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
         <script>
+        $(document).ready(function() {
+            $('#submitReview').on('submit', function() {
+                const sessionId = '{{ session_id }}';  // Pobierz identyfikator sesji z serwera, np. w Flask
+                const currentUrl = window.location.href;
+                if (!currentUrl.includes(sessionId)) {
+                    $(this).attr('action', `/submit-review/${sessionId}`);
+                }
+            });
+        });
+        </script>
+
+        <script>
             $(document).ready(function() {
                 const sqlinProtectionEnabled = {{ sqlin_protection_enabled|tojson }};
                 const xssProtectionEnabled = {{ xss_protection_enabled|tojson }};
+                const csrfProtectionEnabled = {{ csrf_protection_enabled|tojson }};
 
                 $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
                 $('#toggle-xss-protection').text(xssProtectionEnabled ? 'Disable XSS Protection' : 'Enable XSS Protection');
+                $('#toggle-csrf-protection').text(csrfProtectionEnabled ? 'Disable CSRF Protection' : 'Enable CSRF Protection');
             });
         </script>
 
@@ -50,6 +64,13 @@
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                         <button id="toggle-xss-protection" type="submit" class="btn btn-info">
                             {{ 'Disable XSS Protection' if xss_protection_enabled else 'Enable XSS Protection' }}
+                        </button>
+                    </form>
+                    <!-- CSRF Protection toggle button -->
+                    <form action="/toggle-csrf-protection" method="post" class="d-flex">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button id="toggle-csrf-protection" type="submit" class="btn btn-success">
+                            {{ 'Disable CSRF Protection' if csrf_protection_enabled else 'Enable CSRF Protection' }}
                         </button>
                     </form>
                 </div>

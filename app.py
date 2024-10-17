@@ -188,19 +188,19 @@ def toggle_xss_protection():
     return redirect('/')
 
 
-@app.route('/toggle-session-hijack-protection', methods=['POST'])
-def toggle_session_hijack_protection():
-    if not validate_csrf_token(request.form.get('csrf_token')):
-        abort(403)
-    app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = not app.config['SESSION_HIJACK_PROTECTION_ENABLED']
-    return redirect('/')
-
-
 @app.route('/toggle-csrf-protection', methods=['POST'])
 def toggle_csrf_protection():
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['CSRF_PROTECTION_ENABLED'] = not app.config['CSRF_PROTECTION_ENABLED']
+    return redirect('/')
+
+
+@app.route('/toggle-session-hijack-protection', methods=['POST'])
+def toggle_session_hijack_protection():
+    if not validate_csrf_token(request.form.get('csrf_token')):
+        abort(403)
+    app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = not app.config['SESSION_HIJACK_PROTECTION_ENABLED']
     return redirect('/')
 
 
