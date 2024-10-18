@@ -45,22 +45,22 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 import requests
 
-# Funkcja ładująca klucz API z pliku JSON
-def load_api_key_from_json():
+# Funkcja ładująca klucz API z pliku tekstowego
+def load_api_key_from_txt():
     try:
-        with open('config.json', 'r') as f:
-            config = json.load(f)
-            return config.get('virustotal_api_key')
+        with open('virus_total_api.txt', 'r') as f:
+            api_key = f.read().strip()  # Odczytaj klucz i usuń ewentualne białe znaki
+            return api_key
     except FileNotFoundError:
-        raise FileNotFoundError("Plik config.json nie został znaleziony.")
-    except json.JSONDecodeError:
-        raise ValueError("Nie udało się zdekodować pliku JSON.")
+        raise FileNotFoundError("Plik virus_total_api.txt nie został znaleziony.")
+    except Exception as e:
+        raise ValueError(f"Wystąpił błąd podczas odczytywania klucza API: {e}")
 
-# Załaduj klucz API VirusTotal z pliku config.json
-VIRUSTOTAL_API_KEY = load_api_key_from_json()
+# Załaduj klucz API VirusTotal z pliku virus_total_api.txt
+VIRUSTOTAL_API_KEY = load_api_key_from_txt()
 
 if not VIRUSTOTAL_API_KEY:
-    raise ValueError("Brak klucza API VirusTotal. Upewnij się, że plik config.json jest poprawnie skonfigurowany.")
+    raise ValueError("Brak klucza API VirusTotal. Upewnij się, że plik virus_total_api.txt jest poprawnie skonfigurowany.")
 
 def scan_file_with_virustotal(file_path):
     """Skanuje plik za pomocą VirusTotal API i zwraca status skanowania."""
