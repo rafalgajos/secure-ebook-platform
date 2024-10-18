@@ -5,6 +5,7 @@ import logging
 import os
 import hmac
 import hashlib
+import json
 import magic  # Do sprawdzania MIME typu plików
 
 # External imports
@@ -41,6 +42,65 @@ ALLOWED_MIME_TYPES = {
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+import requests
+
+# Funkcja ładująca klucz API z pliku JSON
+def load_api_key_from_json():
+    try:
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+            return config.get('virustotal_api_key')
+    except FileNotFoundError:
+        raise FileNotFoundError("Plik config.json nie został znaleziony.")
+    except json.JSONDecodeError:
+        raise ValueError("Nie udało się zdekodować pliku JSON.")
+
+# Załaduj klucz API VirusTotal z pliku config.json
+VIRUSTOTAL_API_KEY = load_api_key_from_json()
+
+if not VIRUSTOTAL_API_KEY:
+    raise ValueError("Brak klucza API VirusTotal. Upewnij się, że plik config.json jest poprawnie skonfigurowany.")
+
+def scan_file_with_virustotal(file_path):
+    """Skanuje plik za pomocą VirusTotal API i zwraca status skanowania."""
+    url = 'https://www.virustotal.com/vtapi/v2/file/scan'
+    params = {'apikey': VIRUSTOTAL_API_KEY}
+    files = {'file': (file_path, open(file_path, 'rb'))}
+
+    response = requests.post(url, files=files, params=params)
+
+    if response.status_code == 200:
+        json_response = response.json()
+        scan_id = json_response.get('scan_id')
+        return scan_id
+    else:
+        return None
+
+
+def check_virustotal_scan(scan_id):
+    """Sprawdza raport VirusTotal za pomocą scan_id, zwraca False, jeśli plik jest zainfekowany."""
+    url = 'https://www.virustotal.com/vtapi/v2/file/report'
+    params = {'apikey': VIRUSTOTAL_API_KEY, 'resource': scan_id}
+
+    response = requests.get(url, params=params)
+
+    if response.status_code == 200:
+        json_response = response.json()
+        # Pobieramy liczbę pozytywnych wyników skanowania
+        positives = json_response.get('positives', 0)
+        total = json_response.get('total', 0)
+
+        if positives > 0:
+            # Jeśli chociaż jeden skaner wykrył zagrożenie, zwracamy False
+            app.logger.warning(f"VirusTotal found {positives} positives out of {total} scans.")
+            return False, positives, total  # Plik zainfekowany
+        else:
+            app.logger.info(f"VirusTotal scan is clean ({positives}/{total}).")
+            return True, positives, total  # Plik czysty
+    else:
+        app.logger.error("Failed to retrieve VirusTotal scan report.")
+        return False, 0, 0  # Bezpieczne zachowanie — uznajemy za zagrożenie, jeśli nie możemy sprawdzić
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -325,6 +385,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024
 # Lista dozwolonych typów MIME (np. PDF i obrazy)
 ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
 
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if not validate_csrf_token(request.form.get('csrf_token')):
@@ -340,6 +401,7 @@ def upload_file():
         return redirect(url_for('index', session_id=session.get('user_id')))
 
     if file:
+        # Sprawdzenie ochrony przed przesyłaniem plików
         if app.config['FILE_UPLOAD_PROTECTION_ENABLED']:
             # Sprawdzenie typu MIME za pomocą magic
             mime = magic.Magic(mime=True)
@@ -357,10 +419,35 @@ def upload_file():
                 session['upload_message'] = "File is too large"
                 return redirect(url_for('index', session_id=session.get('user_id')))
 
-        # Zapis pliku, jeśli wszystkie warunki zostały spełnione
+        # Zapis pliku na serwerze
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
         file.save(file_path)
-        session['upload_message'] = f"File {file.filename} uploaded successfully"
+
+        # Skanowanie pliku tylko jeśli ochrona przed przesyłaniem plików jest włączona
+        if app.config['FILE_UPLOAD_PROTECTION_ENABLED']:
+            scan_id = scan_file_with_virustotal(file_path)
+            if scan_id:
+                # Sprawdzenie raportu VirusTotal
+                is_clean, positives, total = check_virustotal_scan(scan_id)
+                if not is_clean:
+                    # Jeśli plik jest zainfekowany, usuwamy go i informujemy użytkownika
+                    os.remove(file_path)  # Usunięcie zainfekowanego pliku
+                    session['upload_message'] = (
+                        f"File {file.filename} contains a virus and has been rejected. "
+                        f"VirusTotal detected {positives} threats out of {total} scans."
+                    )
+                    return redirect(url_for('index', session_id=session.get('user_id')))
+                else:
+                    session['upload_message'] = (
+                        f"File {file.filename} uploaded successfully and is clean. "
+                        f"VirusTotal scan: {positives} positives out of {total} scans."
+                    )
+            else:
+                session['upload_message'] = f"File {file.filename} uploaded but VirusTotal scan failed."
+        else:
+            # Jeśli ochrona przed przesyłaniem plików jest wyłączona, po prostu zapisz plik bez skanowania
+            session['upload_message'] = f"File {file.filename} uploaded successfully without VirusTotal scan."
+
         return redirect(url_for('index', session_id=session.get('user_id')))
 
 
