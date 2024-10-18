@@ -1,34 +1,49 @@
 # Standard imports
+import mimetypes
 import uuid
 import logging
 import os
 import hmac
 import hashlib
+import magic  # Do sprawdzania MIME typu plików
 
 # External imports
 import apsw
 import sqlite3
 from flask import Flask, render_template, request, redirect, session, url_for, abort
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['SQLIN_PROTECTION_ENABLED'] = True
 app.config['XSS_PROTECTION_ENABLED'] = True
-app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = True
 app.config['CSRF_PROTECTION_ENABLED'] = True
+app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = True
+app.config['FILE_UPLOAD_PROTECTION_ENABLED'] = True
 app.secret_key = 'super_secret_key'
 
 logging.basicConfig(level=logging.DEBUG)
 
 DATABASE = 'reviews.db'
 
+# Maksymalny rozmiar pliku w bajtach (np. 5 MB)
+MAX_FILE_SIZE = 5 * 1024 * 1024
+
 # File upload configuration
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Allowed file extensions and MIME types
+ALLOWED_EXTENSIONS = {'pdf'}
+ALLOWED_MIME_TYPES = {
+    'application/pdf'
+}
 
 # Ensure the folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def create_reviews_table():
     """Tworzy tabelę 'reviews' jeśli nie istnieje."""
@@ -167,8 +182,9 @@ def index(session_id):
 
     return render_template('index.html', sqlin_protection_enabled=app.config['SQLIN_PROTECTION_ENABLED'],
                            xss_protection_enabled=app.config['XSS_PROTECTION_ENABLED'],
-                           session_hijack_protection_enabled=app.config['SESSION_HIJACK_PROTECTION_ENABLED'],
                            csrf_protection_enabled=app.config['CSRF_PROTECTION_ENABLED'],
+                           session_hijack_protection_enabled=app.config['SESSION_HIJACK_PROTECTION_ENABLED'],
+                           file_upload_protection_enabled=app.config['FILE_UPLOAD_PROTECTION_ENABLED'],
                            session_id=session_id, thank_you_message=thank_you_message, last_review=last_review, upload_message=upload_message)
 
 
@@ -201,6 +217,14 @@ def toggle_session_hijack_protection():
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = not app.config['SESSION_HIJACK_PROTECTION_ENABLED']
+    return redirect('/')
+
+
+@app.route('/toggle-file-upload-protection', methods=['POST'])
+def toggle_file_upload_protection():
+    if not validate_csrf_token(request.form.get('csrf_token')):
+        abort(403)
+    app.config['FILE_UPLOAD_PROTECTION_ENABLED'] = not app.config['FILE_UPLOAD_PROTECTION_ENABLED']
     return redirect('/')
 
 
@@ -292,8 +316,20 @@ def submit_review(session_id):
 
 
 # File upload route
+import magic  # Do sprawdzania MIME typu plików
+from werkzeug.utils import secure_filename  # Zabezpieczenie nazwy pliku
+
+# Maksymalny rozmiar pliku w bajtach (np. 5 MB)
+MAX_FILE_SIZE = 5 * 1024 * 1024
+
+# Lista dozwolonych typów MIME (np. PDF i obrazy)
+ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    if not validate_csrf_token(request.form.get('csrf_token')):
+        abort(403)
+
     if 'ebook-file' not in request.files:
         session['upload_message'] = "No file part"
         return redirect(url_for('index', session_id=session.get('user_id')))
@@ -304,7 +340,25 @@ def upload_file():
         return redirect(url_for('index', session_id=session.get('user_id')))
 
     if file:
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        if app.config['FILE_UPLOAD_PROTECTION_ENABLED']:
+            # Sprawdzenie typu MIME za pomocą magic
+            mime = magic.Magic(mime=True)
+            mime_type = mime.from_buffer(file.read(1024))
+            file.seek(0)  # Resetowanie wskaźnika pliku po odczycie
+            if mime_type not in ALLOWED_MIME_TYPES:
+                session['upload_message'] = f"Invalid file type: {mime_type}"
+                return redirect(url_for('index', session_id=session.get('user_id')))
+
+            # Sprawdzenie rozmiaru pliku
+            file.seek(0, os.SEEK_END)
+            file_length = file.tell()
+            file.seek(0)
+            if file_length > MAX_FILE_SIZE:
+                session['upload_message'] = "File is too large"
+                return redirect(url_for('index', session_id=session.get('user_id')))
+
+        # Zapis pliku, jeśli wszystkie warunki zostały spełnione
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
         file.save(file_path)
         session['upload_message'] = f"File {file.filename} uploaded successfully"
         return redirect(url_for('index', session_id=session.get('user_id')))

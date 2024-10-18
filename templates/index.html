@@ -39,11 +39,13 @@
                 const xssProtectionEnabled = {{ xss_protection_enabled|tojson }};
                 const csrfProtectionEnabled = {{ csrf_protection_enabled|tojson }};
                 const sessionHijackProtectionEnabled = {{ session_hijack_protection_enabled|tojson }};
+                const fileUploadProtectionEnabled = {{ file_upload_protection_enabled|tojson }};
 
                 $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
                 $('#toggle-xss-protection').text(xssProtectionEnabled ? 'Disable XSS Protection' : 'Enable XSS Protection');
                 $('#toggle-csrf-protection').text(csrfProtectionEnabled ? 'Disable CSRF Protection' : 'Enable CSRF Protection');
                 $('#toggle-session-hijack-protection').text(sessionHijackProtectionEnabled ? 'Disable Session Hijack Protection' : 'Enable Session Hijack Protection');
+                $('#toggle-file-upload-protection').text(fileUploadProtectionEnabled ? 'Disable File Upload Protection' : 'Enable File Upload Protection');
             });
         </script>
 
@@ -80,6 +82,13 @@
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                         <button id="toggle-session-hijack-protection" type="submit" class="btn btn-danger">
                             {{ 'Disable Session Hijack Protection' if session_hijack_protection_enabled else 'Enable Session Hijack Protection' }}
+                        </button>
+                    </form>
+                    <!-- File Upload Protection toggle button -->
+                    <form action="/toggle-file-upload-protection" method="post" class="d-flex">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+                        <button id="toggle-file-upload-protection" type="submit" class="btn btn-primary">
+                            {{ 'Disable File Upload Protection' if file_upload_protection_enabled else 'Enable File Upload Protection' }}
                         </button>
                     </form>
                 </div>
@@ -251,23 +260,7 @@
                                 </div>
 
                                 <div class="ebook-upload-form-body">
-                                    <div class="input-group mb-4">
-                                        <input type="text" name="uploader-name" id="uploader-name" class="form-control" aria-label="uploader-name" aria-describedby="basic-addon1" placeholder="Your Name" required>
-
-                                        <span class="input-group-text" id="basic-addon1">
-                                            <i class="custom-form-icon bi-person"></i>
-                                        </span>
-                                    </div>
-
-                                    <div class="input-group mb-4">
-                                        <input type="email" name="uploader-email" id="uploader-email" pattern="[^ @]*@[^ @]*" class="form-control" placeholder="your@company.com" aria-label="uploader-email" aria-describedby="basic-addon2" required>
-
-                                        <span class="input-group-text" id="basic-addon2">
-                                            <i class="custom-form-icon bi-envelope"></i>
-                                        </span>
-                                    </div>
-
-                                    <!-- Nowe pole do przesyłania plików -->
+                                    <!-- Pole do przesyłania plików -->
                                     <div class="input-group mb-4">
                                         <input type="file" name="ebook-file" id="ebook-file" class="form-control" required>
 
