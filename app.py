@@ -317,11 +317,13 @@ def submit_review(session_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Przygotowanie sparametryzowanego zapytania
+    sql = "INSERT INTO reviews (name, email, content, user_id) VALUES (?, ?, ?, ?)"
+
     try:
         malicious_result = None  # Wynik zapytania SELECT, jeśli istnieje
         if app.config['SQLIN_PROTECTION_ENABLED']:
             # Zabezpieczone zapytanie z parametryzacją
-            sql = "INSERT INTO reviews (name, email, content, user_id) VALUES (?, ?, ?, ?)"
             cursor.execute(sql, (name, email, content, user_id))
         else:
             # Złośliwe zapytanie SQL (bez ochrony SQL Injection)
@@ -344,14 +346,22 @@ def submit_review(session_id):
 
             else:
                 # Normalne zapytanie bez złośliwego kodu
-                sql = (f"INSERT INTO reviews (name, email, content, user_id) "
-                       f"VALUES ('{name}', '{email}', '{content}', '{user_id}')")
                 app.logger.debug(f"Executing SQL: {sql}")
-                cursor.execute(sql)
+                cursor.execute(sql, (name, email, content, user_id))
 
     except apsw.SQLError as e:
-        app.logger.error(f"Error executing SQL: {e}")
-        raise
+        # Sprawdzenie czy błąd dotyczy braku tabeli 'reviews'
+        if "no such table: reviews" in str(e):
+            app.logger.warning("Tabela 'reviews' nie istnieje, tworzenie nowej tabeli.")
+            create_reviews_table()  # Wywołanie funkcji tworzącej tabelę
+
+            # Po utworzeniu tabeli ponawiamy próbę zapisu recenzji z poprawnym SQL
+            conn = get_db_connection()  # Ponowne połączenie, aby upewnić się, że zmiany są widoczne
+            cursor = conn.cursor()
+            cursor.execute(sql, (name, email, content, user_id))
+        else:
+            app.logger.error(f"Error executing SQL: {e}")
+            raise
     finally:
         cursor.close()
         conn.close()
