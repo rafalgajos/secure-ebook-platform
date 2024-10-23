@@ -6,7 +6,8 @@ import os
 import hmac
 import hashlib
 import json
-import magic  # Do sprawdzania MIME typu plików
+import magic  # For MIME type checking
+import requests
 
 # External imports
 import apsw
@@ -14,6 +15,7 @@ import sqlite3
 from flask import Flask, render_template, request, redirect, session, url_for, abort
 from werkzeug.utils import secure_filename
 
+# Flask app configuration
 app = Flask(__name__)
 app.config['SQLIN_PROTECTION_ENABLED'] = True
 app.config['XSS_PROTECTION_ENABLED'] = True
@@ -22,48 +24,42 @@ app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = True
 app.config['FILE_UPLOAD_PROTECTION_ENABLED'] = True
 app.secret_key = 'super_secret_key'
 
+# Set up logging
 logging.basicConfig(level=logging.DEBUG)
 
+# Database and file upload configurations
 DATABASE = 'reviews.db'
-
-# Maksymalny rozmiar pliku w bajtach (np. 5 MB)
-MAX_FILE_SIZE = 5 * 1024 * 1024
-
-# File upload configuration
+MAX_FILE_SIZE = 5 * 1024 * 1024  # Maximum file size (e.g., 5 MB)
 UPLOAD_FOLDER = 'uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# Allowed file extensions and MIME types
 ALLOWED_EXTENSIONS = {'pdf'}
-ALLOWED_MIME_TYPES = {
-    'application/pdf'
-}
+ALLOWED_MIME_TYPES = {'application/pdf'}
 
-# Ensure the folder exists
+# Ensure the upload folder exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-import requests
-
-# Funkcja ładująca klucz API z pliku tekstowego
+# Load API key from the external file for VirusTotal integration
 def load_api_key_from_txt():
+    """Load the VirusTotal API key from a text file."""
     try:
         with open('virus_total_api.txt', 'r') as f:
-            api_key = f.read().strip()  # Odczytaj klucz i usuń ewentualne białe znaki
+            api_key = f.read().strip()  # Read and strip any trailing whitespace
             return api_key
     except FileNotFoundError:
-        raise FileNotFoundError("Plik virus_total_api.txt nie został znaleziony.")
+        raise FileNotFoundError("The virus_total_api.txt file was not found.")
     except Exception as e:
-        raise ValueError(f"Wystąpił błąd podczas odczytywania klucza API: {e}")
+        raise ValueError(f"Error while reading the API key: {e}")
 
-# Załaduj klucz API VirusTotal z pliku virus_total_api.txt
+# Load the VirusTotal API key
 VIRUSTOTAL_API_KEY = load_api_key_from_txt()
 
 if not VIRUSTOTAL_API_KEY:
-    raise ValueError("Brak klucza API VirusTotal. Upewnij się, że plik virus_total_api.txt jest poprawnie skonfigurowany.")
+    raise ValueError("Missing VirusTotal API key. Ensure virus_total_api.txt is properly configured.")
 
+# VirusTotal file scanning functions
 def scan_file_with_virustotal(file_path):
-    """Skanuje plik za pomocą VirusTotal API i zwraca status skanowania."""
+    """Scan the file using VirusTotal API and return the scan status."""
     url = 'https://www.virustotal.com/vtapi/v2/file/scan'
     params = {'apikey': VIRUSTOTAL_API_KEY}
     files = {'file': (file_path, open(file_path, 'rb'))}
@@ -77,9 +73,8 @@ def scan_file_with_virustotal(file_path):
     else:
         return None
 
-
 def check_virustotal_scan(scan_id):
-    """Sprawdza raport VirusTotal za pomocą scan_id, zwraca False, jeśli plik jest zainfekowany."""
+    """Check VirusTotal scan report by scan_id. Returns False if the file is infected."""
     url = 'https://www.virustotal.com/vtapi/v2/file/report'
     params = {'apikey': VIRUSTOTAL_API_KEY, 'resource': scan_id}
 
@@ -87,26 +82,27 @@ def check_virustotal_scan(scan_id):
 
     if response.status_code == 200:
         json_response = response.json()
-        # Pobieramy liczbę pozytywnych wyników skanowania
         positives = json_response.get('positives', 0)
         total = json_response.get('total', 0)
 
         if positives > 0:
-            # Jeśli chociaż jeden skaner wykrył zagrożenie, zwracamy False
             app.logger.warning(f"VirusTotal found {positives} positives out of {total} scans.")
-            return False, positives, total  # Plik zainfekowany
+            return False, positives, total  # Infected file
         else:
             app.logger.info(f"VirusTotal scan is clean ({positives}/{total}).")
-            return True, positives, total  # Plik czysty
+            return True, positives, total  # Clean file
     else:
         app.logger.error("Failed to retrieve VirusTotal scan report.")
-        return False, 0, 0  # Bezpieczne zachowanie — uznajemy za zagrożenie, jeśli nie możemy sprawdzić
+        return False, 0, 0  # Consider file as infected if unable to check
 
+# File type and size validation functions
 def allowed_file(filename):
+    """Check if the file has an allowed extension."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Create database table for reviews
 def create_reviews_table():
-    """Tworzy tabelę 'reviews' jeśli nie istnieje."""
+    """Create 'reviews' table if it doesn't exist."""
     try:
         conn = sqlite3.connect(DATABASE)
         cursor = conn.cursor()
@@ -118,36 +114,39 @@ def create_reviews_table():
                             user_id TEXT NOT NULL
                         )''')
         conn.commit()
-        app.logger.debug("Tabela 'reviews' została utworzona lub już istnieje.")
+        app.logger.debug("Table 'reviews' created or already exists.")
     except sqlite3.Error as e:
-        app.logger.error(f"Błąd podczas tworzenia tabeli: {e}")
+        app.logger.error(f"Error creating table: {e}")
     finally:
         if conn:
             conn.close()
 
-# Wywołaj funkcję tworzenia tabeli przy uruchomieniu aplikacji
+# Call the function to create the table when the app starts
 create_reviews_table()
 
-
+# CSRF token generation and validation
 def generate_csrf_token():
+    """Generate a CSRF token for the session if not already present."""
     if 'csrf_token' not in session:
         session['csrf_token'] = hmac.new(app.secret_key.encode(), session.get('user_id', '').encode(),
                                          hashlib.sha256).hexdigest()
     return session['csrf_token']
 
-
 def validate_csrf_token(token):
+    """Validate the provided CSRF token."""
     if not app.config['CSRF_PROTECTION_ENABLED']:
         return True
     return hmac.compare_digest(session.get('csrf_token', ''), token)
 
-
+# Database connection using APSW
 def get_db_connection():
+    """Get a database connection."""
     conn = apsw.Connection(DATABASE)
     return conn
 
-
+# XSS protection function
 def escape_html(text):
+    """Escape HTML characters for XSS protection."""
     html_escape_table = {
         "&": "&amp;",
         '"': "&quot;",
@@ -157,8 +156,9 @@ def escape_html(text):
     }
     return "".join(html_escape_table.get(c, c) for c in text)
 
-
+# Fetch the last review from the database
 def get_last_review():
+    """Retrieve the latest review from the database."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -167,7 +167,6 @@ def get_last_review():
         cursor.execute(sql)
         row = cursor.fetchone()
     except apsw.SQLError as e:
-        # Obsługa przypadku, gdy tabela nie istnieje
         app.logger.error(f"Database error: {e}")
         row = None
     finally:
@@ -175,10 +174,7 @@ def get_last_review():
         conn.close()
 
     if row:
-        name = row[0]
-        email = row[1]
-        content = row[2]
-        user_id = row[3]
+        name, email, content, user_id = row
         if app.config['XSS_PROTECTION_ENABLED']:
             name = escape_html(name)
             email = escape_html(email)
@@ -188,10 +184,10 @@ def get_last_review():
     else:
         return None
 
-
+# Flask app request handling and session protection
 @app.before_request
 def generate_session_id():
-    # Make the session permanent
+    """Generate a unique session ID if one does not exist and protect session hijacking."""
     session.permanent = True
 
     if 'user_id' not in session:
@@ -213,17 +209,18 @@ def generate_session_id():
             session.clear()
             return redirect(url_for('hello'))
 
-
+# Flask routes
 @app.route('/')
 def hello():
+    """Redirect to the index page with session ID."""
     return redirect(url_for('index', session_id=session.get('user_id')))
-
 
 @app.route('/<session_id>')
 def index(session_id):
+    """Render the main index page with protection flags and last review details."""
     thank_you_message = session.pop('thank_you_message', None)
     last_review = session.pop('last_review', None) or get_last_review()
-    upload_message = session.pop('upload_message', None)  # Pobranie wiadomości z sesji
+    upload_message = session.pop('upload_message', None)
 
     if app.config['SESSION_HIJACK_PROTECTION_ENABLED']:
         if session_id != session.get('user_id'):
@@ -240,56 +237,62 @@ def index(session_id):
             app.logger.debug("Forbidden: IP or User-Agent mismatch")
             abort(403)
 
-    return render_template('index.html', sqlin_protection_enabled=app.config['SQLIN_PROTECTION_ENABLED'],
+    return render_template('index.html',
+                           sqlin_protection_enabled=app.config['SQLIN_PROTECTION_ENABLED'],
                            xss_protection_enabled=app.config['XSS_PROTECTION_ENABLED'],
                            csrf_protection_enabled=app.config['CSRF_PROTECTION_ENABLED'],
                            session_hijack_protection_enabled=app.config['SESSION_HIJACK_PROTECTION_ENABLED'],
                            file_upload_protection_enabled=app.config['FILE_UPLOAD_PROTECTION_ENABLED'],
-                           session_id=session_id, thank_you_message=thank_you_message, last_review=last_review, upload_message=upload_message)
+                           session_id=session_id,
+                           thank_you_message=thank_you_message,
+                           last_review=last_review,
+                           upload_message=upload_message)
 
-
+# Toggle protection routes (SQL Injection, XSS, CSRF, session hijack, file upload)
 @app.route('/toggle-sqlin-protection', methods=['POST'])
 def toggle_sqlin_protection():
+    """Toggle SQL Injection protection."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['SQLIN_PROTECTION_ENABLED'] = not app.config['SQLIN_PROTECTION_ENABLED']
     return redirect('/')
 
-
 @app.route('/toggle-xss-protection', methods=['POST'])
 def toggle_xss_protection():
+    """Toggle XSS protection."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['XSS_PROTECTION_ENABLED'] = not app.config['XSS_PROTECTION_ENABLED']
     return redirect('/')
 
-
 @app.route('/toggle-csrf-protection', methods=['POST'])
 def toggle_csrf_protection():
+    """Toggle CSRF protection."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['CSRF_PROTECTION_ENABLED'] = not app.config['CSRF_PROTECTION_ENABLED']
     return redirect('/')
 
-
 @app.route('/toggle-session-hijack-protection', methods=['POST'])
 def toggle_session_hijack_protection():
+    """Toggle session hijacking protection."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['SESSION_HIJACK_PROTECTION_ENABLED'] = not app.config['SESSION_HIJACK_PROTECTION_ENABLED']
     return redirect('/')
 
-
 @app.route('/toggle-file-upload-protection', methods=['POST'])
 def toggle_file_upload_protection():
+    """Toggle file upload protection."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
     app.config['FILE_UPLOAD_PROTECTION_ENABLED'] = not app.config['FILE_UPLOAD_PROTECTION_ENABLED']
     return redirect('/')
 
-
+# Submit review route
 @app.route('/submit-review/<session_id>', methods=['POST'])
 def submit_review(session_id):
+    """Handle the submission of a review."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
 
@@ -298,65 +301,47 @@ def submit_review(session_id):
     name = request.form.get('name', '').strip()
     email = request.form.get('email', '').strip()
     content = request.form.get('message', '').strip()
-    user_id = session_id  # We use the session_id passed in the URL as the user_id
+    user_id = session_id  # Use session_id as user_id
 
-    # Wykonujemy escape tylko wtedy, gdy ochrona przed XSS jest włączona
     if app.config['XSS_PROTECTION_ENABLED']:
         name = escape_html(name)
         email = escape_html(email)
         content = escape_html(content)
         user_id = escape_html(user_id)
 
-    # Logowanie wartości w celu debugowania
-    app.logger.debug(f"Review details - Name: {name}, Email: {email}, Content: {content}, User ID: {user_id}")
-
+    # Ensure all required fields are present
     if not name or not email or not content or not user_id:
         app.logger.error("One or more review details are missing.")
         abort(400, description="Bad Request: One or more review details are missing.")
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
-    # Przygotowanie sparametryzowanego zapytania
     sql = "INSERT INTO reviews (name, email, content, user_id) VALUES (?, ?, ?, ?)"
 
     try:
-        malicious_result = None  # Wynik zapytania SELECT, jeśli istnieje
+        malicious_result = None
         if app.config['SQLIN_PROTECTION_ENABLED']:
-            # Zabezpieczone zapytanie z parametryzacją
             cursor.execute(sql, (name, email, content, user_id))
         else:
-            # Złośliwe zapytanie SQL (bez ochrony SQL Injection)
             if "');" in name:
                 base_name, sql_injection = name.split("');", 1)
-
-                # Normalne zapytanie INSERT bez SQL Injection
                 cursor.execute("INSERT INTO reviews (name, email, content, user_id) VALUES (?, ?, ?, ?)",
                                (base_name, email, content, user_id))
-
-                # Wykonanie złośliwego kodu SQL
-                malicious_sql = sql_injection.strip().replace('--', '')  # Usuwamy komentarze SQL
+                malicious_sql = sql_injection.strip().replace('--', '')
                 app.logger.debug(f"Executing malicious SQL: {malicious_sql}")
 
-                # Sprawdzamy, czy zapytanie zaczyna się od SELECT
                 if malicious_sql.strip().upper().startswith("SELECT"):
                     cursor.execute(malicious_sql)
-                    malicious_result = cursor.fetchall()  # Pobieramy wyniki zapytania SELECT
+                    malicious_result = cursor.fetchall()
                 else:
                     cursor.execute(malicious_sql)
-
             else:
-                # Normalne zapytanie bez złośliwego kodu
                 cursor.execute(sql, (name, email, content, user_id))
-
     except apsw.SQLError as e:
-        # Sprawdzenie czy błąd dotyczy braku tabeli 'reviews'
         if "no such table: reviews" in str(e):
-            app.logger.warning("Tabela 'reviews' nie istnieje, tworzenie nowej tabeli.")
-            create_reviews_table()  # Wywołanie funkcji tworzącej tabelę
-
-            # Po utworzeniu tabeli ponawiamy próbę zapisu recenzji z poprawnym SQL
-            conn = get_db_connection()  # Ponowne połączenie, aby upewnić się, że zmiany są widoczne
+            app.logger.warning("Table 'reviews' does not exist, creating new table.")
+            create_reviews_table()
+            conn = get_db_connection()
             cursor = conn.cursor()
             cursor.execute(sql, (name, email, content, user_id))
         else:
@@ -366,37 +351,23 @@ def submit_review(session_id):
         cursor.close()
         conn.close()
 
-    # Przygotowanie wiadomości z podziękowaniem oraz wyniku zapytania SQL
+    # Prepare the thank-you message
     if malicious_result:
-        app.logger.debug(f"Malicious query result: {malicious_result}")
-        # Wyświetlamy wyniki zapytania SELECT bez dodatkowego opisu
         result_message = "<br>".join([", ".join([str(cell) for cell in row]) for row in malicious_result])
         thank_you_message = f"Thank you for adding your comment, {name}!<br>{result_message}"
     else:
-        # Standardowa wiadomość, gdy nie ma złośliwego wyniku
         thank_you_message = f"Thank you for adding your comment, {name}!"
 
-    # Zapisanie ostatniej recenzji
+    # Save the last review
     last_review = {'name': name, 'email': email, 'content': content, 'user_id': user_id}
-
-    # Przekierowanie do strony głównej z wiadomością podziękowania lub wynikami zapytania
     session['thank_you_message'] = thank_you_message
     session['last_review'] = last_review
     return redirect(url_for('index', session_id=session_id))
 
 # File upload route
-import magic  # Do sprawdzania MIME typu plików
-from werkzeug.utils import secure_filename  # Zabezpieczenie nazwy pliku
-
-# Maksymalny rozmiar pliku w bajtach (np. 5 MB)
-MAX_FILE_SIZE = 5 * 1024 * 1024
-
-# Lista dozwolonych typów MIME (np. PDF i obrazy)
-ALLOWED_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png']
-
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    """Handle file upload with VirusTotal scan if enabled."""
     if not validate_csrf_token(request.form.get('csrf_token')):
         abort(403)
 
@@ -410,17 +381,14 @@ def upload_file():
         return redirect(url_for('index', session_id=session.get('user_id')))
 
     if file:
-        # Sprawdzenie ochrony przed przesyłaniem plików
         if app.config['FILE_UPLOAD_PROTECTION_ENABLED']:
-            # Sprawdzenie typu MIME za pomocą magic
             mime = magic.Magic(mime=True)
             mime_type = mime.from_buffer(file.read(1024))
-            file.seek(0)  # Resetowanie wskaźnika pliku po odczycie
+            file.seek(0)
             if mime_type not in ALLOWED_MIME_TYPES:
                 session['upload_message'] = f"Invalid file type: {mime_type}"
                 return redirect(url_for('index', session_id=session.get('user_id')))
 
-            # Sprawdzenie rozmiaru pliku
             file.seek(0, os.SEEK_END)
             file_length = file.tell()
             file.seek(0)
@@ -428,19 +396,15 @@ def upload_file():
                 session['upload_message'] = "File is too large"
                 return redirect(url_for('index', session_id=session.get('user_id')))
 
-        # Zapis pliku na serwerze
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], secure_filename(file.filename))
         file.save(file_path)
 
-        # Skanowanie pliku tylko jeśli ochrona przed przesyłaniem plików jest włączona
         if app.config['FILE_UPLOAD_PROTECTION_ENABLED']:
             scan_id = scan_file_with_virustotal(file_path)
             if scan_id:
-                # Sprawdzenie raportu VirusTotal
                 is_clean, positives, total = check_virustotal_scan(scan_id)
                 if not is_clean:
-                    # Jeśli plik jest zainfekowany, usuwamy go i informujemy użytkownika
-                    os.remove(file_path)  # Usunięcie zainfekowanego pliku
+                    os.remove(file_path)
                     session['upload_message'] = (
                         f"File {file.filename} contains a virus and has been rejected. "
                         f"VirusTotal detected {positives} threats out of {total} scans."
@@ -454,11 +418,10 @@ def upload_file():
             else:
                 session['upload_message'] = f"File {file.filename} uploaded but VirusTotal scan failed."
         else:
-            # Jeśli ochrona przed przesyłaniem plików jest wyłączona, po prostu zapisz plik bez skanowania
             session['upload_message'] = f"File {file.filename} uploaded successfully without VirusTotal scan."
 
         return redirect(url_for('index', session_id=session.get('user_id')))
 
-
+# Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)

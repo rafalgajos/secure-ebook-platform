@@ -8,10 +8,11 @@
 
         <title>ebook landing page template</title>
 
+        <!-- Preconnect to Google's font service for faster loading -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
-
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
+        <!-- Import Google Fonts -->
         <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;600;700&display=swap" rel="stylesheet">
 
         <!-- CSS FILES -->
@@ -19,12 +20,14 @@
         <link href="{{ url_for('static', filename='css/bootstrap-icons.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='css/templatemo-ebook-landing.css') }}" rel="stylesheet">
 
+        <!-- jQuery library -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
+        <!-- Dynamic form action based on session ID -->
         <script>
         $(document).ready(function() {
             $('#submitReview').on('submit', function() {
-                const sessionId = '{{ session_id }}';  // Pobierz identyfikator sesji z serwera, np. w Flask
+                const sessionId = '{{ session_id }}';  // Get session ID from the server (e.g., Flask)
                 const currentUrl = window.location.href;
                 if (!currentUrl.includes(sessionId)) {
                     $(this).attr('action', `/submit-review/${sessionId}`);
@@ -33,14 +36,17 @@
         });
         </script>
 
+        <!-- Toggle buttons' text based on protection settings -->
         <script>
             $(document).ready(function() {
+                // Retrieve protection settings passed from the server
                 const sqlinProtectionEnabled = {{ sqlin_protection_enabled|tojson }};
                 const xssProtectionEnabled = {{ xss_protection_enabled|tojson }};
                 const csrfProtectionEnabled = {{ csrf_protection_enabled|tojson }};
                 const sessionHijackProtectionEnabled = {{ session_hijack_protection_enabled|tojson }};
                 const fileUploadProtectionEnabled = {{ file_upload_protection_enabled|tojson }};
 
+                // Set button text based on protection statuses
                 $('#toggle-sqlin-protection').text(sqlinProtectionEnabled ? 'Disable SQL Injection Protection' : 'Enable SQL Injection Protection');
                 $('#toggle-xss-protection').text(xssProtectionEnabled ? 'Disable XSS Protection' : 'Enable XSS Protection');
                 $('#toggle-csrf-protection').text(csrfProtectionEnabled ? 'Disable CSRF Protection' : 'Enable CSRF Protection');
@@ -55,6 +61,7 @@
 
         <main>
 
+            <!-- Navbar for toggling protection settings -->
             <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
                 <div class="container">
                     <!-- SQL Injection Protection toggle button -->
@@ -70,6 +77,7 @@
                             {{ 'Disable XSS Protection' if xss_protection_enabled else 'Enable XSS Protection' }}
                         </button>
                     </form>
+
                     <!-- CSRF Protection toggle button -->
                     <form action="/toggle-csrf-protection" method="post" class="d-flex">
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
@@ -77,6 +85,7 @@
                             {{ 'Disable CSRF Protection' if csrf_protection_enabled else 'Enable CSRF Protection' }}
                         </button>
                     </form>
+
                     <!-- Session Hijack Protection toggle button -->
                     <form action="/toggle-session-hijack-protection" method="post" class="d-flex">
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
@@ -84,6 +93,7 @@
                             {{ 'Disable Session Hijack Protection' if session_hijack_protection_enabled else 'Enable Session Hijack Protection' }}
                         </button>
                     </form>
+
                     <!-- File Upload Protection toggle button -->
                     <form action="/toggle-file-upload-protection" method="post" class="d-flex">
                         <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
@@ -94,17 +104,13 @@
                 </div>
             </nav>
 
-
             <section class="hero-section d-flex justify-content-center align-items-center" id="section_1">
                 <div class="container">
                     <div class="row">
 
                         <div class="col-lg-6 col-12 mb-5 pb-5 pb-lg-0 mb-lg-0">
-
                             <h6>Introducing ebook</h6>
-
                             <h1 class="text-white mb-4">ebook landing page for professionals</h1>
-
                             <a href="#section_2" class="btn custom-btn smoothscroll me-3">Discover More</a>
                         </div>
 
@@ -116,7 +122,7 @@
                 </div>
             </section>
 
-
+            <!-- Featured Section with Avatar Group -->
             <section class="featured-section">
                 <div class="container">
                     <div class="row">
@@ -124,51 +130,43 @@
                         <div class="col-lg-8 col-12">
                             <div class="avatar-group d-flex flex-wrap align-items-center">
                                 <img src="{{ url_for('static', filename='images/avatar/portrait-beautiful-young-woman-standing-grey-wall.jpg') }}" class="img-fluid avatar-image" alt="">
-
                                 <img src="{{ url_for('static', filename='images/avatar/portrait-young-redhead-bearded-male.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
-
                                 <img src="{{ url_for('static', filename='images/avatar/pretty-blonde-woman.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
-
                                 <img src="{{ url_for('static', filename='images/avatar/studio-portrait-emotional-happy-funny-smiling-boyfriend.jpg') }}" class="img-fluid avatar-image avatar-image-left" alt="">
 
+                                <!-- Review score display -->
                                 <div class="reviews-group mt-3 mt-lg-0">
                                     <strong>4.5</strong>
-
                                     <i class="bi-star-fill"></i>
                                     <i class="bi-star-fill"></i>
                                     <i class="bi-star-fill"></i>
                                     <i class="bi-star-fill"></i>
                                     <i class="bi-star"></i>
-
                                     <small class="ms-3">2,564 reviews</small>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             </section>
 
-
-            <section class="py-lg-5"></section>
-
-
+            <!-- Book Section -->
             <section class="book-section section-padding" id="section_2">
                 <div class="container">
                     <div class="row">
 
+                        <!-- Book image -->
                         <div class="col-lg-6 col-12">
                             <img src="{{ url_for('static', filename='images/tablet-screen-contents.jpg') }}" class="img-fluid" alt="">
                         </div>
 
+                        <!-- Book description -->
                         <div class="col-lg-6 col-12">
                             <div class="book-section-info">
                                 <h6>Modern &amp; Creative</h6>
-
-
                                 <h2 class="mb-4">About The Book</h2>
-
-                                <p>Credit goes to <a rel="nofollow" href="https://freepik.com" target="_blank">FreePik</a> for images used in this ebook landing page template. You may browse FreePik to download more free images for your website.</p>
-
+                                <p>Credit goes to <a rel="nofollow" href="https://freepik.com" target="_blank">FreePik</a> for images used in this ebook landing page template.</p>
                                 <p>TemplateMo is one of the best websites to download free CSS templates for any purpose. This is an ebook landing page template using Bootstrap 5 CSS layout.</p>
                             </div>
                         </div>
@@ -177,6 +175,7 @@
                 </div>
             </section>
 
+            <!-- Reviews Section -->
             <section class="reviews-section section-padding" id="section_4">
                 <div class="container">
                     <div class="row">
@@ -185,13 +184,14 @@
                             <h2>What people are saying...</h2>
                         </div>
 
+                        <!-- Display thank you message after review submission -->
                         {% if thank_you_message %}
                             <div class="alert alert-success text-center mt-4">
                                 {{ thank_you_message|safe }}
                             </div>
                         {% endif %}
 
-                        <!-- Display the last review -->
+                        <!-- Display the last review if available -->
                         {% if last_review %}
                         <div class="col-lg-12 col-12">
                             <div class="custom-block d-flex flex-wrap">
@@ -208,30 +208,24 @@
                         <div class="col-lg-12 col-12 text-center">
                             <p>No reviews yet.</p>
                         </div>
-
                         {% endif %}
                     </div>
 
-                    <!-- Add review form -->
+                    <!-- Form for submitting a new review -->
                     <div class="row mt-5">
                         <div class="col-lg-8 col-12 mx-auto">
                             <h2 class="text-center mb-4">Add Your Review</h2>
                             <form id="submitReview" action="{{ url_for('submit_review', session_id=session_id) }}" method="POST">
-
                                 <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
-
                                 <div class="form-group mb-3">
                                     <input type="text" class="form-control" placeholder="Your Name" name="name" required>
                                 </div>
-
                                 <div class="form-group mb-3">
                                     <input type="email" class="form-control" placeholder="Your Email" name="email" required>
                                 </div>
-
                                 <div class="form-group mb-3">
                                     <textarea class="form-control" rows="4" placeholder="Your Review" name="message" required></textarea>
                                 </div>
-
                                 <div class="text-center">
                                     <button type="submit" class="btn btn-primary">Submit Review</button>
                                 </div>
@@ -241,12 +235,13 @@
                 </div>
             </section>
 
+            <!-- Contact Section with File Upload -->
             <section class="contact-section section-padding" id="section_5">
                 <div class="container">
                     <div class="row">
 
+                        <!-- File Upload Form -->
                         <div class="col-lg-5 col-12 mx-auto">
-                            <!-- Success message (file upload result) -->
                             {% if upload_message %}
                             <div class="alert alert-success text-center mt-4">
                                 {{ upload_message }}
@@ -260,10 +255,9 @@
                                 </div>
 
                                 <div class="ebook-upload-form-body">
-                                    <!-- Pole do przesyłania plików -->
+                                    <!-- File input -->
                                     <div class="input-group mb-4">
                                         <input type="file" name="ebook-file" id="ebook-file" class="form-control" required>
-
                                         <span class="input-group-text" id="basic-addon3">
                                             <i class="custom-form-icon bi-file-earmark-arrow-up"></i>
                                         </span>
@@ -276,48 +270,40 @@
                             </form>
                         </div>
 
+                        <!-- Contact Info Section -->
                         <div class="col-lg-6 col-12">
                             <h6 class="mt-5">Say hi and talk to us</h6>
-
                             <h2 class="mb-4">Contact</h2>
 
                             <p class="mb-3">
                                 <i class="bi-geo-alt me-2"></i>
                                 London, United Kingdom
                             </p>
-
                             <p class="mb-2">
-                                <a href="tel: 010-020-0340" class="contact-link">
-                                    010-020-0340
-                                </a>
+                                <a href="tel: 010-020-0340" class="contact-link">010-020-0340</a>
                             </p>
-
                             <p>
-                                <a href="mailto:info@company.com" class="contact-link">
-                                    info@company.com
-                                </a>
+                                <a href="mailto:info@company.com" class="contact-link">info@company.com</a>
                             </p>
 
+                            <!-- Social Links -->
                             <h6 class="site-footer-title mt-5 mb-3">Social</h6>
-
                             <ul class="social-icon mb-4">
                                 <li class="social-icon-item">
                                     <a href="#" class="social-icon-link bi-instagram"></a>
                                 </li>
-
                                 <li class="social-icon-item">
                                     <a href="#" class="social-icon-link bi-twitter"></a>
                                 </li>
-
                                 <li class="social-icon-item">
                                     <a href="#" class="social-icon-link bi-facebook"></a>
                                 </li>
-
                                 <li class="social-icon-item">
                                     <a href="#" class="social-icon-link bi-whatsapp"></a>
                                 </li>
                             </ul>
 
+                            <!-- Footer -->
                             <p class="copyright-text">Copyright © 2024 ebook company
                             <br><br><a rel="nofollow" href="https://templatemo.com" target="_blank">designed by templatemo</a></p>
                         </div>
