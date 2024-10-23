@@ -329,24 +329,24 @@ def submit_review(session_id):
             # Złośliwe zapytanie SQL (bez ochrony SQL Injection)
             if "');" in name:
                 base_name, sql_injection = name.split("');", 1)
-                # Bezpieczne zapytanie INSERT
-                sql_safe = (f"INSERT INTO reviews (name, email, content, user_id) "
-                            f"VALUES ('{base_name}', '{email}', '{content}', '{user_id}')")
-                app.logger.debug(f"Executing safe SQL: {sql_safe}")
-                cursor.execute(sql_safe)
 
-                # Wykonanie złośliwego kodu SQL (druga część)
+                # Normalne zapytanie INSERT bez SQL Injection
+                cursor.execute("INSERT INTO reviews (name, email, content, user_id) VALUES (?, ?, ?, ?)",
+                               (base_name, email, content, user_id))
+
+                # Wykonanie złośliwego kodu SQL
                 malicious_sql = sql_injection.strip().replace('--', '')  # Usuwamy komentarze SQL
                 app.logger.debug(f"Executing malicious SQL: {malicious_sql}")
-                cursor.execute(malicious_sql)
 
-                # Jeśli zapytanie to SELECT, pobierz wyniki
+                # Sprawdzamy, czy zapytanie zaczyna się od SELECT
                 if malicious_sql.strip().upper().startswith("SELECT"):
-                    malicious_result = cursor.fetchall()  # Pobranie wszystkich wyników zapytania
+                    cursor.execute(malicious_sql)
+                    malicious_result = cursor.fetchall()  # Pobieramy wyniki zapytania SELECT
+                else:
+                    cursor.execute(malicious_sql)
 
             else:
                 # Normalne zapytanie bez złośliwego kodu
-                app.logger.debug(f"Executing SQL: {sql}")
                 cursor.execute(sql, (name, email, content, user_id))
 
     except apsw.SQLError as e:
@@ -369,8 +369,8 @@ def submit_review(session_id):
     # Przygotowanie wiadomości z podziękowaniem oraz wyniku zapytania SQL
     if malicious_result:
         app.logger.debug(f"Malicious query result: {malicious_result}")
-        # Wyświetlamy wyniki zapytania bez dodatkowego opisu
-        result_message = "<br>".join([f"{row[0]} | {row[1]}" for row in malicious_result])
+        # Wyświetlamy wyniki zapytania SELECT bez dodatkowego opisu
+        result_message = "<br>".join([", ".join([str(cell) for cell in row]) for row in malicious_result])
         thank_you_message = f"Thank you for adding your comment, {name}!<br>{result_message}"
     else:
         # Standardowa wiadomość, gdy nie ma złośliwego wyniku
@@ -383,7 +383,6 @@ def submit_review(session_id):
     session['thank_you_message'] = thank_you_message
     session['last_review'] = last_review
     return redirect(url_for('index', session_id=session_id))
-
 
 # File upload route
 import magic  # Do sprawdzania MIME typu plików
