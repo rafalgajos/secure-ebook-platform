@@ -46,6 +46,20 @@ Secure-Ebook-Platform is a web application developed using Flask, aimed at manag
    flask run
    ```
 
+## VirusTotal Integration
+
+The platform integrates with [VirusTotal](https://www.virustotal.com) to scan uploaded files for malware. To enable this feature, follow the steps below:
+
+1. Obtain an API key by signing up at [VirusTotal](https://www.virustotal.com/gui/join-us).
+2. Create a file named `virus_total_api.txt` in the root directory of the project.
+3. Add your VirusTotal API key to the `virus_total_api.txt` file:
+   ```plaintext
+   your_virustotal_api_key_here
+   ```
+4. Ensure that this file is present in the same directory as the Flask application before running the platform.
+
+#### Important: If the virus_total_api.txt file is missing or the API key is not properly configured, the server will fail to start, and you will encounter a FileNotFoundError.
+
 ## Usage <a name="usage"></a>
 
 - Start the application.
