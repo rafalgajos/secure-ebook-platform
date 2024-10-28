@@ -86,6 +86,9 @@ The platform integrates with [VirusTotal](https://www.virustotal.com) to scan up
 
 ## License <a name="license"></a>
 
-This project is protected under copyright law.  
-Copyright 2024 Natalia Brzezińska, Rafał Gajos  
+This project is proprietary software.  
+© 2024 Natalia Brzezińska, Rafał Gajos  
 All Rights Reserved.
+
+The source code and logic of this project are fully owned by the authors. However, the "Ebook Landing" template and images from [TemplateMo](https://templatemo.com) and [Freepik](https://freepik.com) are not covered under this license, and their rights remain with their respective creators as per their terms. Users are responsible for adhering to the licensing requirements of these external resources.
+
