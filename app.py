@@ -95,13 +95,14 @@ def check_virustotal_scan(scan_id):
 
         if response.status_code == 200:
             json_response = response.json()
+
+            # Check that the response contains the ‘positives’ and ‘total’ keys
+            if 'positives' not in json_response or 'total' not in json_response:
+                app.logger.error("VirusTotal did not return 'positives' or 'total' values in the response.")
+                return False, 0, 0  # Treat file as infected if response is incomplete
+
             positives = json_response.get('positives')
             total = json_response.get('total')
-
-            # Handle cases where VirusTotal does not provide scan results
-            if positives is None or total is None:
-                app.logger.error("VirusTotal did not return positives or total values.")
-                return False, 0, 0  # Treat as infected if unclear
 
             if positives > 0:
                 app.logger.warning(f"VirusTotal found {positives} positives out of {total} scans.")
@@ -111,10 +112,11 @@ def check_virustotal_scan(scan_id):
                 return True, positives, total  # Clean file
         else:
             app.logger.error(f"Failed to retrieve VirusTotal scan report: {response.status_code}")
-            return False, 0, 0  # Consider file as infected if unable to check
+            return False, 0, 0  # Treat file as infected, if cannot be checked
     except Exception as e:
         app.logger.error(f"Exception during VirusTotal report check: {e}")
         return False, 0, 0
+
 
 # File type and size validation functions
 def allowed_file(filename):
