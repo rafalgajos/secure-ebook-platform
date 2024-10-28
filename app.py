@@ -57,6 +57,7 @@ VIRUSTOTAL_API_KEY = load_api_key_from_txt()
 if not VIRUSTOTAL_API_KEY:
     raise ValueError("Missing VirusTotal API key. Ensure virus_total_api.txt is properly configured.")
 
+
 # VirusTotal file scanning functions
 def scan_file_with_virustotal(file_path):
     """Scan the file using VirusTotal API and return the scan status."""
@@ -64,36 +65,56 @@ def scan_file_with_virustotal(file_path):
     params = {'apikey': VIRUSTOTAL_API_KEY}
     files = {'file': (file_path, open(file_path, 'rb'))}
 
-    response = requests.post(url, files=files, params=params)
+    try:
+        with open(file_path, 'rb') as f:
+            response = requests.post(url, files={'file': (file_path, f)}, params=params)
 
-    if response.status_code == 200:
-        json_response = response.json()
-        scan_id = json_response.get('scan_id')
-        return scan_id
-    else:
+        if response.status_code == 200:
+            json_response = response.json()
+            scan_id = json_response.get('scan_id')
+            if scan_id:
+                return scan_id
+            else:
+                app.logger.error("Scan ID not returned in the response.")
+                return None
+        else:
+            app.logger.error(f"Failed to initiate scan: {response.status_code}")
+            return None
+    except Exception as e:
+        app.logger.error(f"Exception during VirusTotal scan initiation: {e}")
         return None
+
 
 def check_virustotal_scan(scan_id):
     """Check VirusTotal scan report by scan_id. Returns False if the file is infected."""
     url = 'https://www.virustotal.com/vtapi/v2/file/report'
     params = {'apikey': VIRUSTOTAL_API_KEY, 'resource': scan_id}
 
-    response = requests.get(url, params=params)
+    try:
+        response = requests.get(url, params=params)
 
-    if response.status_code == 200:
-        json_response = response.json()
-        positives = json_response.get('positives', 0)
-        total = json_response.get('total', 0)
+        if response.status_code == 200:
+            json_response = response.json()
+            positives = json_response.get('positives')
+            total = json_response.get('total')
 
-        if positives > 0:
-            app.logger.warning(f"VirusTotal found {positives} positives out of {total} scans.")
-            return False, positives, total  # Infected file
+            # Handle cases where VirusTotal does not provide scan results
+            if positives is None or total is None:
+                app.logger.error("VirusTotal did not return positives or total values.")
+                return False, 0, 0  # Treat as infected if unclear
+
+            if positives > 0:
+                app.logger.warning(f"VirusTotal found {positives} positives out of {total} scans.")
+                return False, positives, total  # Infected file
+            else:
+                app.logger.info(f"VirusTotal scan is clean ({positives}/{total}).")
+                return True, positives, total  # Clean file
         else:
-            app.logger.info(f"VirusTotal scan is clean ({positives}/{total}).")
-            return True, positives, total  # Clean file
-    else:
-        app.logger.error("Failed to retrieve VirusTotal scan report.")
-        return False, 0, 0  # Consider file as infected if unable to check
+            app.logger.error(f"Failed to retrieve VirusTotal scan report: {response.status_code}")
+            return False, 0, 0  # Consider file as infected if unable to check
+    except Exception as e:
+        app.logger.error(f"Exception during VirusTotal report check: {e}")
+        return False, 0, 0
 
 # File type and size validation functions
 def allowed_file(filename):
